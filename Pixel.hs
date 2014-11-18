@@ -12,6 +12,8 @@ data Term'
 
     | Field String Term'
     
+    | If Term' Term' Term'
+
     | Call String [Term']
     | BuiltIn String
     | UnaryOperator String Term'
@@ -23,6 +25,8 @@ type R = Term Double
 type Vec2 = Term (Double, Double)
 type Vec3 = Term (Double, Double, Double)
 type Vec4 = Term (Double, Double, Double, Double)
+
+type Boolean = Term Bool
 
 type Time = R
 type Color = Vec4
@@ -106,6 +110,31 @@ max' (Term a) (Term b) = Term (Call "max" [a, b])
 min' (Term a) (Term b) = Term (Call "min" [a, b])
 mod' (Term a) (Term b) = Term (Call "mod" [a, b])
 
+round', floor', ceil' :: R -> R
+round' (Term a) = Term (Call "round" [a])
+floor' (Term a) = Term (Call "floor" [a])
+ceil' (Term a) = Term (Call "ceil" [a])
+
+if' :: Boolean -> Term a -> Term a -> Term a
+if' (Term a) (Term b) (Term c) = Term (If a b c)
+
+(.==.) :: R -> R -> Boolean
+Term a .==. Term b = Term (BinaryOperator "==" a b)
+
+(./=.) :: R -> R -> Boolean
+Term a ./=. Term b = Term (BinaryOperator "!=" a b)
+
+(.<.) :: R -> R -> Boolean
+Term a .<. Term b = Term (BinaryOperator "<" a b)
+
+(.>.) :: R -> R -> Boolean
+Term a .>. Term b = Term (BinaryOperator ">" a b)
+
+(.<=.) :: R -> R -> Boolean
+Term a .<=. Term b = Term (BinaryOperator "<=" a b)
+
+(.>=.) :: R -> R -> Boolean
+Term a .>=. Term b = Term (BinaryOperator ">=" a b)
 
 class Bindable a            where variableType :: a -> String
 instance Bindable R         where variableType _ = "float"
@@ -151,6 +180,11 @@ compile' (Constant r) = return $ show r
 compile' (Field l r) = do
     r' <- compile' r
     return (r' ++ "." ++ l)
+compile' (If a b c) = do
+    a' <- compile' a
+    b' <- compile' b
+    c' <- compile' c
+    return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
 compile' (Call f es) = do
     es' <- mapM compile' es
     return $ f ++ "(" ++ List.intercalate ", " es' ++ ")"
