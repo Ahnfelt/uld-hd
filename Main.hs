@@ -18,7 +18,7 @@ blender :: (R -> R -> R) -> Image -> Image -> Image
 blender binOp f g x y =
     f x y >- \c1 ->
     g x y >- \c2 ->
-    rgba (binOp (red c1) (red c2)) (binOp (green c1) (green c2)) (binOp (blue c1) (blue c2)) (binOp (alpha c1) (alpha c2))
+    rgba (binOp (red c1) (red c2)) (binOp (green c1) (green c2)) (binOp (blue c1) (blue c2)) (alpha c1)
 
 multiply :: Image -> Image -> Image
 multiply = blender (*)
@@ -51,11 +51,13 @@ ball x y =
 gaussBall :: Image
 gaussBall x y =
     0.3 >- \variance ->
-    sqrt(x * x + y * y) >- \distance ->
+    distance 0 x 0 y >- \d ->
     gaussian variance 0 >- \maxGaussian ->
-    gaussian variance distance / maxGaussian >- \intensity ->
+    gaussian variance d / maxGaussian >- \intensity ->
     rgba intensity intensity intensity 1
-    
+
+distance :: R -> R -> R -> R -> R
+distance x1 x2 y1 y2 = sqrt ((x1 - x2)**2 + (y1 - y2)**2)    
 
 -- Animations
 
@@ -103,19 +105,19 @@ f3 :: Animation
 f3 t x y = rainbow (x + t * 10) y
 
 theGame :: Animation
-theGame t =
+theGame =
     let
-        colorbow = scroll 1 0 (multiply rainbow wave)
+        colorbow = scroll 1 0 (multiply (scale 10 1 rainbow) wave)
         spinBall = circle 1 gaussBall
         balls t = ((jump 0 spinBall) t `addition` (jump (2*pi/3) spinBall) t) `addition` (jump (4*pi/3) spinBall) t
         combined t = addition (colorbow t) (balls t)
         timeBent = futureHole (scroll 1 0 rainbow)
-    in timeBent t
+    in futureHole combined
     
 -- Write the shader
 
 main = do
-    let f' = compile (\t -> theGame t)
+    let f' = compile theGame
     putStrLn f'
     writeFile "index.html" (before ++ f' ++ after)
     where

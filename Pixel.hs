@@ -139,8 +139,9 @@ compile f = before ++ bindings ++ "    gl_FragColor = " ++ compiled ++ after
             "void main() {\n" ++
             "    float pi = " ++ show pi ++ ";\n" ++
             "    float t = u_time;\n" ++
-            "    float x = (u_resolution.x * 0.5 - gl_FragCoord.x) / u_resolution.x * u_aspectRatio;\n" ++
-            "    float y = (u_resolution.y * 0.5 - gl_FragCoord.y) / u_resolution.y;\n"
+            "    float mystery = 1.23;\n" ++
+            "    float x = (gl_FragCoord.x / u_resolution.x) * 2.0 * u_aspectRatio - u_aspectRatio * mystery;\n" ++
+            "    float y = (gl_FragCoord.y / u_resolution.y) * 2.0 - 1.0 * mystery;\n"
         after           =
             ";\n}\n"
 

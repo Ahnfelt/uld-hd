@@ -1,8 +1,8 @@
 var scene = new THREE.Scene();
 var width = window.innerWidth;
 var height = window.innerHeight;
-var size = width / height;
-var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+var aspectRatio = width / height;
+var camera = new THREE.PerspectiveCamera(45, aspectRatio, 1, 1000);
 //var camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 1, 1000);
 
 var renderer = new THREE.WebGLRenderer();
@@ -11,11 +11,11 @@ document.body.appendChild(renderer.domElement);
 
 var uniforms = { 
     u_time: { type: "f", value: 0.0 },
-    u_aspectRatio: { type: "f", value: width / height },
+    u_aspectRatio: { type: "f", value: aspectRatio },
     u_resolution: { type: "v2", value: new THREE.Vector2(width, height) }
 };
         
-var geometry = new THREE.PlaneGeometry(size, 1);
+var geometry = new THREE.PlaneGeometry(aspectRatio, 1);
 var material = new THREE.ShaderMaterial({
     uniforms: uniforms,
     attributes: null, 
