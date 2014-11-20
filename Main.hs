@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main where
 
 import Pixel
@@ -10,32 +12,52 @@ import Prelude hiding (subtract)
 --------------------------------
 
 main :: IO ()
-main = generateHtml $ timeballs
+main = generateHtml $ chessLights
 
 
 --------------------------------
 -- Some funky animations
 --------------------------------
 
-spinBall :: Animation
-spinBall = circle 1 gaussBall
+circleBall :: Animation
+circleBall = orbit 1 2 (spin 0.2 (const (scale 0.5 0.6 gaussBall)))
 
 balls :: Animation
-balls = spinBall `addition` jump (2*pi/3) spinBall `addition` jump (4*pi/3) spinBall
+balls = fastForward 0.3 $ spin 0.2 $ circleBall `addition` jump (2*pi/3) circleBall `addition` jump (4*pi/3) circleBall
 
 colorbow :: Animation
-colorbow = scroll 1 0 (multiplyImage (scale 10 1 rainbow) wave)
+colorbow = scroll 1 0 (const (scale 10 1 rainbow) `multiply` const wave)
 
 rainballs :: Animation
 rainballs = colorbow `addition` balls
 
 timebow :: Animation
-timebow = bendSpaceTime hole (scroll 1 0 rainbow)
+timebow = bendSpaceTime hole (scroll 1 0 (const rainbow))
 
 timeballs :: Animation
 timeballs = bendSpaceTime hole rainballs
 
-hole = (circle 0.7 gaussBall) `multiply` (\t x y -> rgba 0 0 5 1)
+hole = (circle 0.7 (const gaussBall)) `multiply` (\t x y -> rgba 0 0 5 1)
+
+chessLights = chessDevils `multiply` (const (scale 10 1 rainbow)) `multiply` balls
+
+chessDevils :: Animation = bendSpaceTime devilMirror (const $ scale 0.04 0.04 chess)
+    where
+        devilMirror =
+            hellHole    1  0.2  0.05  2.5   3  2.5  5 `addition`
+            hellHole   13  0.1  0.02  3     9  0.5  0.1 `addition`
+            hellHole  133  0.4  0.05  2.9   2  1    0.5 `addition`
+            hellHole 1337  0.9  0.04  3.1   11  5    0.9
+
+        hellHole startTime size timeFactor orbitX orbitY spinSpeed rotationSpeed =
+            jump startTime $ fastForward timeFactor $ circle rotationSpeed $ orbit orbitX orbitY $ spin spinSpeed $ liftA (scale size size) displacementBall
+
+        displacementBall :: Animation
+        displacementBall t x y =
+            distance 0 x 0 y >- \d ->
+            gaussianOne 0.3 d >- \intensity ->
+            rgba (intensity * x / d) (intensity * y / d) 0 1
+
 
 
 --------------------------------
@@ -55,7 +77,7 @@ cross :: Image
 cross x y = rgba x y 0 1
 
 rainbow :: Image
-rainbow x _ = hsva (mod' x 1) 0.5 0.5 1
+rainbow x _ = hsva (mod' x 1) 0.6 0.5 1
 
 wave :: Image
 wave x y =
@@ -73,6 +95,14 @@ sharpBall x y =
     (distance 0 x 0 y) >- \d ->
     if' (d .<. 0.5) 1 0 >- \intensity ->
     rgba intensity intensity intensity 1
+
+chess :: Image
+chess x y =
+    floor' (x `mod'` 2) >- \intensityX ->
+    floor' (y `mod'` 2) >- \intensityY ->
+    abs (intensityY - intensityX) >- \intensity ->
+    rgba intensity intensity intensity 1
+
 
 --------------------------------
 -- Image blendings
@@ -109,6 +139,10 @@ scale :: R -> R -> Image -> Image
 scale scaleX scaleY image x y =
     image (x / scaleX) (y / scaleY)
 
+rotate :: R -> Image -> Image
+rotate angle image x y =
+    image (x * cos angle - y * sin angle) (x * sin angle + y * cos angle)
+
 
 
 --------------------------------
@@ -118,12 +152,18 @@ scale scaleX scaleY image x y =
 jump :: Time -> Animation -> Animation
 jump dt image t x y = image (t + dt) x y
 
-scroll :: R -> R -> Image -> Animation
-scroll speedX speedY image t =
-    translate (speedX * t) (speedY * t) image
+scroll :: R -> R -> Animation -> Animation
+scroll speedX speedY animation t =
+    translate (speedX * t) (speedY * t) (animation t)
 
-circle :: R -> Image -> Animation
-circle speed image t = translate (cos (speed * t)) (sin (speed * t)) image
+circle :: R -> Animation -> Animation
+circle speed = orbit speed speed
+
+orbit :: R -> R -> Animation -> Animation
+orbit speedX speedY animation t = translate (cos (speedX * t)) (sin (speedY * t)) (animation t)
+
+spin :: R -> Animation -> Animation
+spin speed animation t = rotate (speed * t) (animation t)
 
 fastForward :: R -> Animation -> Animation
 fastForward speed animation t x y = animation (t * speed) x y

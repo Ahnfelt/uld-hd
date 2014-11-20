@@ -138,6 +138,7 @@ Term a .>=. Term b = Term (BinaryOperator ">=" a b)
 
 class Bindable a            where variableType :: a -> String
 instance Bindable R         where variableType _ = "float"
+instance Bindable Boolean   where variableType _ = "bool"
 instance Bindable Vec2      where variableType _ = "vec2"
 instance Bindable Vec3      where variableType _ = "vec3"
 instance Bindable Vec4      where variableType _ = "vec4"
