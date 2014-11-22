@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 
-module Pixel where
+module Accelemation.Language where
+
 import qualified Data.List as List
 import Control.Monad.State.Strict
 
@@ -206,3 +207,12 @@ compile' (Bind t x f) = do
     f' <- compile' (f (Variable i))
     return f'
 compile' (Variable i) = return $ "v" ++ show i
+
+generateHtml :: Animation -> IO ()
+generateHtml animation = do
+    let f' = compile animation
+    putStrLn f'
+    writeFile "index.html" (before ++ f' ++ after)
+    where
+        before = "<html><head><title>Demo</title><style>body { margin: 0; }canvas { width: 100%; height: 100% }</style></head><body><script src=\"three.js\"></script><script id=\"fragmentShader\" type=\"x-shader/x-vertex\">\n//<![CDATA[\n"
+        after = "//]]>\n</script><script src=\"program.js\"></script></body></html>\n"
