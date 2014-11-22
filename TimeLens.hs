@@ -10,11 +10,6 @@ import Prelude hiding (subtract)
 main :: IO ()
 main = generateHtml $ timeballs
 
-
---------------------------------
--- Some funky animations
---------------------------------
-
 spinBall :: Animation
 spinBall = circle 1 gaussBall
 
