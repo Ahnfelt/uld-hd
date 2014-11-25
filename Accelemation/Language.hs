@@ -137,6 +137,12 @@ Term a .<=. Term b = Term (BinaryOperator "<=" a b)
 (.>=.) :: R -> R -> Boolean
 Term a .>=. Term b = Term (BinaryOperator ">=" a b)
 
+(.&&.) :: Boolean -> Boolean -> Boolean
+Term a .&&. Term b = Term (BinaryOperator "&&" a b)
+
+(.||.) :: Boolean -> Boolean -> Boolean
+Term a .||. Term b = Term (BinaryOperator "||" a b)
+
 class Bindable a            where variableType :: a -> String
 instance Bindable R         where variableType _ = "float"
 instance Bindable Boolean   where variableType _ = "bool"

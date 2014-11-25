@@ -2,7 +2,7 @@ module Accelemation.Combinators (
     translate, scale, rotate,
     scroll, circle, orbit, spin,
     timeTravel, fastForward, bendSpaceTime,
-    multiply, screen, addition, subtract
+    multiply, screen, addition, subtract, top
 ) where
 
 import Accelemation.Language
@@ -70,6 +70,9 @@ addition = liftA2 additionImage
 subtract :: Animation -> Animation -> Animation
 subtract = liftA2 subtractImage
 
+top :: Animation -> Animation -> Animation
+top = liftA2 subtractImage
+
 --------------------------------
 -- Image blendings
 --------------------------------
@@ -91,3 +94,11 @@ additionImage = blender (\a b -> min' 1 (a + b))
 
 subtractImage :: Image -> Image -> Image
 subtractImage = blender (\a b -> max' 0 (a - b))
+
+topImage :: Image -> Image -> Image
+topImage f g x y =
+    f x y >- \a ->
+    g x y >- \b ->
+    let combine component = component a * alpha a + component b * alpha b * (1 - min' 1 (alpha a))
+    in rgba (combine red) (combine green) (combine blue) (alpha a + alpha b * (1 - min' 1 (alpha a)))
+
