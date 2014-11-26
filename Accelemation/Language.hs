@@ -222,3 +222,43 @@ generateHtml animation = do
     where
         before = "<html><head><title>Demo</title><style>body { margin: 0; }canvas { width: 100%; height: 100% }</style></head><body><script src=\"three.js\"></script><script id=\"fragmentShader\" type=\"x-shader/x-vertex\">\n//<![CDATA[\n"
         after = "//]]>\n</script><script src=\"program.js\"></script></body></html>\n"
+
+instance Show a => Show (Term a) where
+    show (Term term') = show term'
+
+instance Show Term' where
+    show term = bindings ++ compiled
+        where
+            bindings        = concat (reverse vs)
+            (compiled, vs)  = runState (showM term) []
+
+            showM :: Term' -> State [String] String
+            showM (Constant r) = return $ show r
+            showM (Field l r) = do
+                r' <- showM r
+                return (r' ++ "." ++ l)
+            showM (If a b c) = do
+                a' <- showM a
+                b' <- showM b
+                c' <- showM c
+                return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
+            showM (Call f es) = do
+                es' <- mapM showM es
+                return $ f ++ "(" ++ List.intercalate ", " es' ++ ")"
+            showM (BuiltIn x) = return x
+            showM (UnaryOperator o a) = do
+                a' <- showM a
+                return $ "(" ++ o ++ a' ++ ")"
+            showM (BinaryOperator o a b) = do
+                a' <- showM a
+                b' <- showM b
+                return $ "(" ++ a' ++ " " ++ o ++ " " ++ b' ++ ")"
+            showM (Bind t x f) = do
+                x' <- showM x
+                vs <- get
+                let i = length vs
+                let v = "    " ++ t ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
+                put (v:vs)
+                f' <- showM (f (Variable i))
+                return f'
+            showM (Variable i) = return $ "v" ++ show i

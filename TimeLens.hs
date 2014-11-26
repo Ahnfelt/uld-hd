@@ -1,4 +1,4 @@
-module TimeLens where
+module Main where
 
 import Accelemation.Language
 import Accelemation.Combinators
