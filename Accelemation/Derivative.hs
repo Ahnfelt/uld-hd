@@ -4,13 +4,13 @@ import Accelemation.Language
 
 derivative :: (R -> R) -> R -- TODO return a function (R -> R)
 derivative f =
-    let term = f (Term (Variable 0))
+    let term = f (Term (BuiltIn "x"))
     in derivative' term
 
 derivative' :: Term Double -> Term Double
 derivative' (Term t) | isConstant t                = 0
 --derivative' (Term (Bind String Term' (Term' -> Term')))
-derivative' (Term (Variable 0))             = 1
+derivative' (Term (BuiltIn "x"))             = 1
 --derivative' (Term (Field String Term'))     =
 derivative' (Term (If a b c))               = if' (Term a) (derivative' (Term b)) (derivative' (Term c))
 
@@ -35,7 +35,7 @@ derivative' (Term (Call "mod" [a, b]))      = derivative' (Term a)
 
 
 isConstant :: Term' -> Bool
-isConstant (Variable 0) = False
+isConstant (BuiltIn "x") = False
 isConstant (Constant _) = True
 isConstant (If a b c) = isConstant a && isConstant b && isConstant c
 isConstant (BinaryOperator _ a b) = isConstant a && isConstant b
