@@ -8,8 +8,14 @@ gaussian variance x =
 
 gaussianNormalized :: R -> R -> R
 gaussianNormalized variance x =
-    gaussian variance 0 >- \maxValue ->
-    gaussian variance x / maxValue
+    gaussian variance x / (gaussian variance 0)
 
 distance :: Floating a => a -> a -> a -> a -> a
 distance x1 x2 y1 y2 = sqrt ((x1 - x2)**2 + (y1 - y2)**2)
+
+
+sigmoid :: R -> R
+sigmoid x = 1 / (1 + exp (-x))
+
+sigfade :: R -> R
+sigfade x = sigmoid ((x - 0.5)*10)
