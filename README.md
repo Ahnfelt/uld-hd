@@ -16,12 +16,13 @@ Try this from the online in-browser cloud9 IDE!
 - Open the workspace for editing.
 - Click on the "bash" tab in the bottom of the window and run these commands:
 
-    cabal update
-    cabal install mtl
+``cabal update``
+
+``cabal install mtl``
 
 - To generate your first shader, run:
 
-    runhaskell TimeLens.hs
+``runhaskell TimeLens.hs``
   
 - This will generate an `index.html` file. Right click on this file and select "run".
 
