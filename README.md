@@ -12,7 +12,7 @@ Try this from the online in-browser cloud9 IDE!
 ===============================================
 
 - Go to https://c9.io/ and sign up/in. You can sign in with your GitHub account.
-- Create new workspace -> Clone from URL: git@github.com:Ahnfelt/uld-hd.git
+- Create new workspace -> Clone from URL: `git@github.com:Ahnfelt/uld-hd.git`
 - Open the workspace for editing.
 - Click on the "bash" tab in the bottom of the window and run these commands:
 
