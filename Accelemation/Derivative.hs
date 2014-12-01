@@ -1,14 +1,24 @@
 module Accelemation.Derivative (
     derivative,
-    GrayscaleImage, Grayscale, derivativeGrayscale
+    GrayscaleImage, Grayscale,
+    fromGrayscaleImage, fromGrayscale,
+    derivativeGrayscale,
 ) where
 
 import Accelemation.Language
+import Control.Applicative (liftA)
 
 type GrayscaleImage = R -> R -> R
 
 -- Grayscale animation
 type Grayscale = Time -> GrayscaleImage
+
+fromGrayscaleImage :: GrayscaleImage -> Image
+fromGrayscaleImage f x y = (f x y) >- \i ->
+    rgba i i i 1
+
+fromGrayscale :: Grayscale -> Animation
+fromGrayscale = liftA fromGrayscaleImage
 
 derivativeGrayscale :: Grayscale -> Animation
 derivativeGrayscale f t x y =

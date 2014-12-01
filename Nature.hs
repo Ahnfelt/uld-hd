@@ -25,7 +25,7 @@ stalk _ x y =
     in c >- \i -> rgba 0.2 0.8 0.3 i
 
 
-stalkCurve y = sin (y * 5) * 0.1
+stalkCurve y = cos (y * 9) * 0.04 + sin (y * 5) * 0.09
 
 gaussBall :: Animation
 gaussBall _ x y =

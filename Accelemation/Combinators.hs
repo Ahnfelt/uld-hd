@@ -71,7 +71,7 @@ subtract :: Animation -> Animation -> Animation
 subtract = liftA2 subtractImage
 
 top :: Animation -> Animation -> Animation
-top = liftA2 subtractImage
+top = liftA2 topImage
 
 --------------------------------
 -- Image blendings
