@@ -46,25 +46,26 @@ derivative f =
             Variable i -> t
 
 derivative' :: Term Double -> Term Double
-derivative' (Term t) | isConstant t         = 0
-derivative' (Term (BuiltIn "_x"))           = 1
-derivative' (Term (If a b c))               = if' (Term a) (derivative' (Term b)) (derivative' (Term c))
---derivative' (Term (Field String Term'))     =
---derivative' (Term (Bind t v f))             = derivative' (Term v) >- \v' -> -- TODO
-derivative' (Term (BinaryOperator op a b))  = derivativeBinary op a b
-derivative' (Term (UnaryOperator "-" a))    = -(derivative' (Term a))
-derivative' (Term (Call "abs" [a]))         = if' ((Term a) .>. 0) (derivative' (Term a)) (-derivative' (Term a)) -- TODO remove common subexpression
-derivative' (Term (Call "sign" [a]))        = 0
-derivative' (Term (Call "pow" [a, b]))      = derivativeBinary "pow" a b
-derivative' (Term (Call "sqrt" [a]))        = 0.5 * sqrt (Term a) * derivative' (Term a)
-derivative' t@(Term (Call "exp" [a]))       = t * derivative' (Term a)
-derivative' (Term (Call "log" [a]))         = ((derivative' (Term a)) / (Term a)) * derivative' (Term a)
-derivative' (Term (Call "sin" [a]))         = -(cos (Term a)) * derivative' (Term a)
-derivative' (Term (Call "cos" [a]))         = -(sin (Term a)) * derivative' (Term a)
-derivative' (Term (Call "tan" [a]))         = (derivative' (sin (Term a) / cos (Term a))) * derivative' (Term a)
-derivative' (Term (Call "max" [a, b]))      = if' ((Term a) .>. (Term b)) (derivative' (Term a)) (derivative' (Term b))
-derivative' (Term (Call "min" [a, b]))      = if' ((Term a) .<. (Term b)) (derivative' (Term a)) (derivative' (Term b))
-derivative' (Term (Call "mod" [a, b]))      = derivative' (Term a)
+derivative' t@(Term term') = case term' of
+    _ | isConstant term'   -> 0
+    BuiltIn "_x"           -> 1
+    If a b c               -> if' (Term a) (derivative' (Term b)) (derivative' (Term c))
+--  Field String Term'     ->
+--  Bind t v f             -> derivative' (Term v) >- \v' -- TODO
+    BinaryOperator op a b  -> derivativeBinary op a b
+    UnaryOperator "-" a    -> -(derivative' (Term a))
+    Call "abs" [a]         -> if' ((Term a) .>. 0) (derivative' (Term a)) (-derivative' (Term a)) -- TODO remove common subexpression
+    Call "sign" [a]        -> 0
+    Call "pow" [a, b]      -> derivativeBinary "pow" a b
+    Call "sqrt" [a]        -> 0.5 * sqrt (Term a) * derivative' (Term a)
+    Call "exp" [a]         -> t * derivative' (Term a)
+    Call "log" [a]         -> ((derivative' (Term a)) / (Term a)) * derivative' (Term a)
+    Call "sin" [a]         -> -(cos (Term a)) * derivative' (Term a)
+    Call "cos" [a]         -> -(sin (Term a)) * derivative' (Term a)
+    Call "tan" [a]         -> (derivative' (sin (Term a) / cos (Term a))) * derivative' (Term a)
+    Call "max" [a, b]      -> if' ((Term a) .>. (Term b)) (derivative' (Term a)) (derivative' (Term b))
+    Call "min" [a, b]      -> if' ((Term a) .<. (Term b)) (derivative' (Term a)) (derivative' (Term b))
+    Call "mod" [a, b]      -> derivative' (Term a)
 
 
 derivativeBinary op a b = case (op, isConstant a, isConstant b) of
