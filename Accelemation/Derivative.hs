@@ -46,17 +46,15 @@ derivative f =
             Variable i -> t
 
 derivative' :: Term Double -> Term Double
-derivative' (Term t) | isConstant t                = 0
-derivative' (Term (BuiltIn "_x"))             = 1
+derivative' (Term t) | isConstant t         = 0
+derivative' (Term (BuiltIn "_x"))           = 1
 derivative' (Term (If a b c))               = if' (Term a) (derivative' (Term b)) (derivative' (Term c))
 --derivative' (Term (Field String Term'))     =
---derivative' (Term (Bind String Term' (Term' -> Term')))
-
-derivative' (Term (BinaryOperator op a b)) = derivativeBinary op a b
+--derivative' (Term (Bind t v f))             = derivative' (Term v) >- \v' -> -- TODO
+derivative' (Term (BinaryOperator op a b))  = derivativeBinary op a b
 derivative' (Term (UnaryOperator "-" a))    = -(derivative' (Term a))
-
---derivative' (Term (Call "abs" [a])) =
---derivative' (Term (Call "sign" [a])) =
+derivative' (Term (Call "abs" [a]))         = if' ((Term a) .>. 0) (derivative' (Term a)) (-derivative' (Term a)) -- TODO remove common subexpression
+derivative' (Term (Call "sign" [a]))        = 0
 derivative' (Term (Call "pow" [a, b]))      = derivativeBinary "pow" a b
 derivative' (Term (Call "sqrt" [a]))        = 0.5 * sqrt (Term a) * derivative' (Term a)
 derivative' t@(Term (Call "exp" [a]))       = t * derivative' (Term a)
@@ -102,6 +100,7 @@ isConstant (If a b c) = isConstant a && isConstant b && isConstant c
 isConstant (BinaryOperator _ a b) = isConstant a && isConstant b
 isConstant (UnaryOperator _ a) = isConstant a
 isConstant (BuiltIn _) = True
+isConstant (Call "sign" [_]) = True
 isConstant (Call _ es) = all isConstant es
 isConstant (Bind x v f) = isConstant v && isConstant (f (Constant 0))
 
