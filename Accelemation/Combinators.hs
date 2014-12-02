@@ -81,7 +81,7 @@ blender :: (R -> R -> R) -> Image -> Image -> Image
 blender binOp f g x y =
     f x y >- \c1 ->
     g x y >- \c2 ->
-    rgba (binOp (red c1) (red c2)) (binOp (green c1) (green c2)) (binOp (blue c1) (blue c2)) (alpha c1)
+    rgba (binOp (red c1) (red c2)) (binOp (green c1) (green c2)) (binOp (blue c1) (blue c2)) ((alpha c1 + alpha c2) / 2)
 
 multiplyImage :: Image -> Image -> Image
 multiplyImage = blender (*)

@@ -220,8 +220,8 @@ generateHtml animation = do
     putStrLn f'
     writeFile "index.html" (before ++ f' ++ after)
     where
-        before = "<html><head><title>Demo</title><style>body { margin: 0; }canvas { width: 100%; height: 100% }</style></head><body><script src=\"three.js\"></script><script id=\"fragmentShader\" type=\"x-shader/x-vertex\">\n//<![CDATA[\n"
-        after = "//]]>\n</script><script src=\"program.js\"></script></body></html>\n"
+        before = "<html><head><title>Demo</title><style>body { margin: 0; }canvas { width: 100%; height: 100% }</style></head><body><script src=\"js/three.js\"></script><script id=\"fragmentShader\" type=\"x-shader/x-vertex\">\n//<![CDATA[\n"
+        after = "//]]>\n</script><script src=\"js/program.js\"></script></body></html>\n"
 
 instance Show a => Show (Term a) where
     show (Term term') = show term'
