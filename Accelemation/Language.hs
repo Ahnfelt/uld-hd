@@ -4,6 +4,7 @@ module Accelemation.Language where
 
 import qualified Data.List as List
 import Control.Monad.State.Strict
+import System.Environment (getProgName)
 
 data Term'
     = Constant Double
@@ -218,7 +219,8 @@ generateHtml :: Animation -> IO ()
 generateHtml animation = do
     let f' = compile animation
     putStrLn f'
-    writeFile "index.html" (before ++ f' ++ after)
+    name <- getProgName
+    writeFile (name ++ ".html") (before ++ f' ++ after)
     where
         before = "<html><head><title>Demo</title><style>body { margin: 0; }canvas { width: 100%; height: 100% }</style></head><body><script src=\"js/three.js\"></script><script id=\"fragmentShader\" type=\"x-shader/x-vertex\">\n//<![CDATA[\n"
         after = "//]]>\n</script><script src=\"js/program.js\"></script></body></html>\n"
