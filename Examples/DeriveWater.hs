@@ -23,10 +23,10 @@ test3 = bendSpaceTime (fastForward 0.1 (orbit 1 1.3 (spin 1 (derivativeGrayscale
 
 waves :: Grayscale
 waves t x y =
-    let wave centerX centerY frequence speed amplitude =
+    let wave centerX centerY frequence amplitude =
             let d = distance centerX x centerY y
-            in sin (-frequence * t + speed * d) * amplitude
-    in wave 0 0 10 10 0.3
+            in sin (frequence * (t + 3 / d)) * amplitude
+    in wave 0 0 10 1
 
 grayBall :: Grayscale
 grayBall _ x y =

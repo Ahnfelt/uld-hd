@@ -26,6 +26,10 @@ derivativeGrayscale f t x y =
         g = derivative (\a -> f t x a) y
     in rgba r g 0 1
 
+--derivativeNormals :: Grayscale -> Animation
+--derivativeNormals f t x y = 
+
+
 derivative :: (R -> R) -> (R -> R)
 derivative f =
     let term = f (Term (BuiltIn "_x"))

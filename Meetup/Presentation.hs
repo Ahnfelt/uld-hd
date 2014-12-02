@@ -8,9 +8,11 @@ import Accelemation.Derivative
 import Accelemation.Animations
 
 main :: IO ()
-main = generateHtml $ fromGrayscale (grayBall )
+main = generateHtml $ bendSpaceTime (derivativeGrayscale grayBall) (scale 0.04 0.04 chess) 
 
-grayBall :: R -> Grayscale
-grayBall variance _ x y =
-    distance 0 x 0 y >- \d ->
-    gaussianNormalized variance d
+--derivativeGrayscale grayBall `addition` (\_ _ _ -> rgba 0.5 0.5 0.5 1)
+
+grayBall :: Grayscale
+grayBall _ x y =
+    let d = distance 0 x 0 y
+    in gaussianNormalized 0.4 d
