@@ -3,15 +3,14 @@ module Examples.TimeLens where
 import Accelemation.Language
 import Accelemation.Combinators
 import Accelemation.Arithmetic
+import Accelemation.Animations
 
-import Control.Applicative
-import Prelude hiding (subtract)
 
 main :: IO ()
 main = generateHtml $ timeballs
 
 spinBall :: Animation
-spinBall = circle 1 gaussBall
+spinBall = circle 1 (gaussBall 0.3)
 
 balls :: Animation
 balls = spinBall `addition` timeTravel (2*pi/3) spinBall `addition` timeTravel (4*pi/3) spinBall
@@ -28,7 +27,7 @@ timebow = bendSpaceTime hole (scroll 1 0 rainbow)
 timeballs :: Animation
 timeballs = bendSpaceTime hole rainballs
 
-hole = (circle 0.7 gaussBall) `multiply` (\t x y -> rgba 0 0 5 1)
+hole = (circle 0.7 (gaussBall 0.3)) `multiply` (\t x y -> rgba 0 0 5 1)
 
 
 --------------------------------
@@ -43,8 +42,3 @@ wave _ x y =
     1 - abs (y - sin (x)) >- \intensity ->
     rgba intensity intensity intensity 1
 
-gaussBall :: Animation
-gaussBall _ x y =
-    distance 0 x 0 y >- \d ->
-    gaussianNormalized 0.3 d >- \intensity ->
-    rgba intensity intensity intensity 1

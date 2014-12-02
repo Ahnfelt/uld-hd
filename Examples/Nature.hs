@@ -4,9 +4,6 @@ import Accelemation.Language
 import Accelemation.Combinators
 import Accelemation.Arithmetic
 
-import Control.Applicative
-import Prelude hiding (subtract)
-
 main :: IO ()
 main = generateHtml $ translate 0 0.5 flower
 
@@ -15,7 +12,7 @@ flower = flowerHead `top` stalk
 
 flowerHead :: Animation
 flowerHead = translate (-stalkCurve 1) (-1) $ scale 0.4 0.4 $
-    gaussBall `multiply` (\t x y -> rgba 0.8 0.2 0.2 1)
+    alphaBall `multiply` (\t x y -> rgba 0.8 0.2 0.2 1)
 
 stalk :: Animation
 stalk _ x y =
@@ -27,8 +24,8 @@ stalk _ x y =
 
 stalkCurve y = cos (y * 9) * 0.04 + sin (y * 5) * 0.09
 
-gaussBall :: Animation
-gaussBall _ x y =
+alphaBall :: Animation
+alphaBall _ x y =
     distance 0 x 0 y >- \d ->
     gaussianNormalized 0.3 d >- \intensity ->
     rgba 1 1 1 intensity
