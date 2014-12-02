@@ -22,7 +22,7 @@ Try this from the online in-browser cloud9 IDE!
 
 - To generate your first shader, run:
 
-``runhaskell TimeLens.hs``
+``runhaskell Examples/TimeLens.hs``
   
 - This will generate an `index.html` file. Right click on this file and select "run".
 
