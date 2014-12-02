@@ -22,8 +22,8 @@ Try this from the online in-browser cloud9 IDE!
 
 - To generate your first shader, run:
 
-``runhaskell TimeLens.hs``
+``runhaskell Examples/TimeLens.hs``
   
 - This will generate an `index.html` file. Right click on this file and select "run".
 
-That's it. You must have support for WebGL (most computers do). When you want to try another example, simply `runhaskell SomethingFooBar.hs` and then click the refresh icon on the tab that displays the animation.
+That's it. You must have support for WebGL (most computers do). When you want to try another example, simply `runhaskell Meetup/SomethingFooBar.hs` and then click the refresh icon on the tab that displays the animation.
