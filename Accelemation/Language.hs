@@ -137,8 +137,36 @@ alpha = getW
 -- The mix function returns the linear blend of x and y, i.e. the product of x and (1 - a) plus the product of y and a.
 mix :: R -> R -> R -> R
 mix (Term x) (Term y) (Term a) = Term $ Call "mix" False [x, y, a]
+
+-- = min(max(a, minVal), maxVal) 
+clamp :: R -> R -> R -> R
+clamp (Term x) (Term a) (Term b) = Term $ Call "clamp" False [x, a, b]
+
+-- The cross product
+cross :: Vec3 -> Vec3 -> Vec3
+cross (Term a) (Term b) = Term $ Call "cross" False [a, b]
+
+-- Please see: http://en.wikibooks.org/wiki/GLSL_Programming/Vector_and_Matrix_Operations
+class VectorOperations a where
+    dot :: Term a -> Term a -> R
+    magnitude :: Term a -> R
+    distance :: Term a -> Term a -> R
+    normalize :: Term a -> Term a
+    faceforward :: Term a -> Term a -> Term a -> Term a
+    reflect :: Term a -> Term a -> Term a
+
+    dot (Term a) (Term b) = Term $ Call "dot" False [a, b]
+    magnitude (Term a) = Term $ Call "length" False [a]
+    distance (Term a) (Term b) = Term $ Call "distance" False [a, b]
+    normalize (Term a) = Term $ Call "normalize" False [a]
+    faceforward (Term a) (Term b) (Term c) = Term $ Call "faceforward" False [a, b, c]
+    reflect (Term a) (Term b) = Term $ Call "reflect" False [a, b]
+
+instance VectorOperations (Double, Double) -- Vec2
+instance VectorOperations (Double, Double, Double) -- Vec3
+instance VectorOperations (Double, Double, Double, Double) -- Vec4
         
-        
+
 instance Num R where
     (Term a) + (Term b) = Term (Call "+" True [a, b])
     (Term a) - (Term b) = Term (Call "-" True [a, b])

@@ -10,7 +10,7 @@ main = generateHtml $ spin 0.1 hsvDisk
 
 hsvDisk :: Animation
 hsvDisk t x y =
-    distance 0 x 0 y >- \d ->
+    curry2 magnitude x y >- \d ->
     let a1 = acos(x/d)
         a = if' (y .>. 0) a1 (2*pi - a1)
         h = a / (2*pi)
@@ -18,3 +18,4 @@ hsvDisk t x y =
 
 
 cap x = max' 0 (min' 1 x)
+

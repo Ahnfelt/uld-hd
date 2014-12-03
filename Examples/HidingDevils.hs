@@ -27,7 +27,7 @@ hellHole startTime size timeFactor orbitX orbitY spinSpeed rotationSpeed =
 
 displacementBall :: Animation
 displacementBall t x y =
-    distance 0 x 0 y >- \d ->
+    curry2 magnitude x y >- \d ->
     gaussianNormalized 0.3 d >- \intensity ->
     rgba (intensity * x / d) (intensity * y / d) 0 1
 

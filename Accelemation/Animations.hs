@@ -18,6 +18,6 @@ chess _ x y =
     
 gaussBall :: R -> Animation
 gaussBall variance _ x y =
-    distance 0 x 0 y >- \d ->
+    curry2 magnitude x y >- \d ->
     gaussianNormalized variance d >- \intensity ->
     rgba intensity intensity intensity 1

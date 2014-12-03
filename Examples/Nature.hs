@@ -26,6 +26,6 @@ stalkCurve y = cos (y * 9) * 0.04 + sin (y * 5) * 0.09
 
 alphaBall :: Animation
 alphaBall _ x y =
-    distance 0 x 0 y >- \d ->
+    curry2 magnitude x y >- \d ->
     gaussianNormalized 0.3 d >- \intensity ->
     rgba 1 1 1 intensity
