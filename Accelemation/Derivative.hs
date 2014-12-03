@@ -41,35 +41,39 @@ derivative f =
             Constant r -> t
             Field l r -> Field l (substisute x r)
             If a b c -> If (substisute x a) (substisute x b) (substisute x c)
-            Call f es -> Call f (map (substisute x) es)
+            Call f o es -> Call f o (map (substisute x) es)
+            LiftVec2 f o es -> LiftVec2 f o (map (substisute x) es)
+            LiftVec3 f o es -> LiftVec3 f o (map (substisute x) es)
+            LiftVec4 f o es -> LiftVec4 f o (map (substisute x) es)
             BuiltIn "_x" -> x
             BuiltIn x -> t
-            UnaryOperator o a -> UnaryOperator o (substisute x a)
-            BinaryOperator o a b -> BinaryOperator o (substisute x a) (substisute x b)
             Bind name value body -> Bind name (substisute x value) body -- TODO
             Variable i -> t
 
 derivative' :: Term Double -> Term Double
 derivative' t@(Term term') = case term' of
-    _ | isConstant term'   -> 0
-    BuiltIn "_x"           -> 1
-    If a b c               -> if' (Term a) (derivative' (Term b)) (derivative' (Term c))
---  Field String Term'     ->
---  Bind t v f             -> derivative' (Term v) >- \v' -- TODO
-    BinaryOperator op a b  -> derivativeBinary op a b
-    UnaryOperator "-" a    -> -(derivative' (Term a))
-    Call "abs" [a]         -> if' ((Term a) .>. 0) (derivative' (Term a)) (-derivative' (Term a)) -- TODO remove common subexpression
-    Call "sign" [a]        -> 0
-    Call "pow" [a, b]      -> derivativeBinary "pow" a b
-    Call "sqrt" [a]        -> 0.5 * sqrt (Term a) * derivative' (Term a)
-    Call "exp" [a]         -> t * derivative' (Term a)
-    Call "log" [a]         -> ((derivative' (Term a)) / (Term a)) * derivative' (Term a)
-    Call "sin" [a]         -> -(cos (Term a)) * derivative' (Term a)
-    Call "cos" [a]         -> -(sin (Term a)) * derivative' (Term a)
-    Call "tan" [a]         -> (derivative' (sin (Term a) / cos (Term a))) * derivative' (Term a)
-    Call "max" [a, b]      -> if' ((Term a) .>. (Term b)) (derivative' (Term a)) (derivative' (Term b))
-    Call "min" [a, b]      -> if' ((Term a) .<. (Term b)) (derivative' (Term a)) (derivative' (Term b))
-    Call "mod" [a, b]      -> derivative' (Term a)
+    _ | isConstant term'    -> 0
+    BuiltIn "_x"            -> 1
+    If a b c                -> if' (Term a) (derivative' (Term b)) (derivative' (Term c))
+--  Field String Term'      ->
+--  Bind t v f              -> derivative' (Term v) >- \v' -- TODO
+    Call f True [a, b]      -> derivativeBinary f a b
+    Call "-" True [a]       -> -(derivative' (Term a))
+    Call "abs" False [a]    -> derivative' (Term a) >- \a' -> if' ((Term a) .>. 0) a' (-a') -- TODO remove common subexpression
+    Call "sign" False [a]   -> 0
+    Call "pow" False [a, b] -> derivativeBinary "pow" a b
+    Call "sqrt" False [a]   -> 0.5 * sqrt (Term a) * derivative' (Term a)
+    Call "exp" False [a]    -> t * derivative' (Term a)
+    Call "log" False [a]    -> ((derivative' (Term a)) / (Term a)) * derivative' (Term a)
+    Call "sin" False [a]    -> -(cos (Term a)) * derivative' (Term a)
+    Call "cos" False [a]    -> -(sin (Term a)) * derivative' (Term a)
+    Call "tan" False [a]    -> (derivative' (sin (Term a) / cos (Term a))) * derivative' (Term a)
+    Call "max" False [a, b] -> if' ((Term a) .>. (Term b)) (derivative' (Term a)) (derivative' (Term b))
+    Call "min" False [a, b] -> if' ((Term a) .<. (Term b)) (derivative' (Term a)) (derivative' (Term b))
+    Call "mod" False [a, b] -> derivative' (Term a)
+    LiftVec2 f o es         -> derivative' (Term $ Call "vec2" False [Call f o (map (Field "x") es), Call f o (map (Field "y") es)])
+    LiftVec3 f o es         -> derivative' (Term $ Call "vec3" False [Call f o (map (Field "x") es), Call f o (map (Field "y") es), Call f o (map (Field "z") es)])
+    LiftVec4 f o es         -> derivative' (Term $ Call "vec4" False [Call f o (map (Field "x") es), Call f o (map (Field "y") es), Call f o (map (Field "z") es), Call f o (map (Field "w") es)])
 
 
 derivativeBinary op a b = case (op, isConstant a, isConstant b) of
@@ -102,10 +106,10 @@ isConstant :: Term' -> Bool
 isConstant (BuiltIn "_x") = False
 isConstant (Constant _) = True
 isConstant (If a b c) = isConstant a && isConstant b && isConstant c
-isConstant (BinaryOperator _ a b) = isConstant a && isConstant b
-isConstant (UnaryOperator _ a) = isConstant a
 isConstant (BuiltIn _) = True
-isConstant (Call "sign" [_]) = True
-isConstant (Call _ es) = all isConstant es
+isConstant (Call "sign" False [_]) = True
+isConstant (Call _ _ es) = all isConstant es
+isConstant (LiftVec2 _ _ es) = all isConstant es
+isConstant (LiftVec3 _ _ es) = all isConstant es
+isConstant (LiftVec4 _ _ es) = all isConstant es
 isConstant (Bind x v f) = isConstant v && isConstant (f (Constant 0))
-
