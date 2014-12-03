@@ -3,6 +3,7 @@
 module Accelemation.Language where
 
 import qualified Data.List as List
+import Data.Maybe
 import Control.Monad.State.Strict
 import System.Environment (getProgName)
 
@@ -16,10 +17,13 @@ data Term'
     
     | If Term' Term' Term'
 
-    | Call String [Term']
     | BuiltIn String
-    | UnaryOperator String Term'
-    | BinaryOperator String Term' Term'
+    
+    | Call String Bool [Term']
+    
+    | LiftVec2 String Bool [Term']
+    | LiftVec3 String Bool [Term']
+    | LiftVec4 String Bool [Term']
 
 newtype Term a = Term { unTerm :: Term' }
 
@@ -37,36 +41,91 @@ type Image = R -> R -> Color
 type Animation = Time -> Image
 
 
-class HasX a where getX :: a -> R
-class HasY a where getY :: a -> R
-class HasZ a where getZ :: a -> R
-class HasW a where getW :: a -> R
+class HasX a where getX :: a -> R; withX :: R -> a -> a
+class HasY a where getY :: a -> R; withY :: R -> a -> a
+class HasZ a where getZ :: a -> R; withZ :: R -> a -> a
+class HasW a where getW :: a -> R; withW :: R -> a -> a
 
-instance HasX (Term (Double, Double))                   where getX = Term . Field "x" . unTerm
-instance HasX (Term (Double, Double, Double))           where getX = Term . Field "x" . unTerm
-instance HasX (Term (Double, Double, Double, Double))   where getX = Term . Field "x" . unTerm
-instance HasY (Term (Double, Double))                   where getY = Term . Field "y" . unTerm
-instance HasY (Term (Double, Double, Double))           where getY = Term . Field "y" . unTerm
-instance HasY (Term (Double, Double, Double, Double))   where getY = Term . Field "y" . unTerm
-instance HasZ (Term (Double, Double, Double))           where getZ = Term . Field "z" . unTerm
-instance HasZ (Term (Double, Double, Double, Double))   where getZ = Term . Field "z" . unTerm
-instance HasW (Term (Double, Double, Double, Double))   where getW = Term . Field "w" . unTerm
+instance HasX Vec2 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec2 r (getY a')
+instance HasX Vec3 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec3 r (getY a') (getZ a')
+instance HasX Vec4 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec4 r (getY a') (getZ a') (getW a')
+instance HasY Vec2 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec2 (getX a') r
+instance HasY Vec3 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec3 (getX a') r (getZ a')
+instance HasY Vec4 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec4 (getX a') r (getZ a') (getW a')
+instance HasZ Vec3 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' -> vec3 (getX a') (getY a') r
+instance HasZ Vec4 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' -> vec4 (getX a') (getY a') r (getW a')
+instance HasW Vec4 where getW = Term . Field "w" . unTerm; withW r a = a >- \a' -> vec4 (getX a') (getY a') (getZ a') r 
 
 
 vec2 :: R -> R -> Vec2
-vec2 (Term x) (Term y) = Term (Call "vec2" [x, y])
+vec2 (Term x) (Term y) = Term (Call "vec2" False [x, y])
 
 vec3 :: R -> R -> R -> Vec3
-vec3 (Term x) (Term y) (Term z) = Term (Call "vec3" [x, y, z])
+vec3 (Term x) (Term y) (Term z) = Term (Call "vec3" False [x, y, z])
 
 vec4 :: R -> R -> R -> R -> Vec4
-vec4 (Term x) (Term y) (Term z) (Term w) = Term (Call "vec4" [x, y, z, w])
+vec4 (Term x) (Term y) (Term z) (Term w) = Term (Call "vec4" False [x, y, z, w])
+
+
+curry2 :: (Vec2 -> Term a) -> (R -> R -> Term a)
+curry2 f x y = vec2 x y >- \a' -> f a'
+
+curry3 :: (Vec3 -> Term a) -> (R -> R -> R -> Term a)
+curry3 f x y z = vec3 x y z >- \a' -> f a'
+
+curry4 :: (Vec4 -> Term a) -> (R -> R -> R -> R -> Term a)
+curry4 f x y z w = vec4 x y z w >- \a' -> f a'
+
+uncurry2 :: (R -> R -> Term a) -> (Vec2 -> Term a)
+uncurry2 f a = a >- \a' -> f (getX a') (getY a')
+
+uncurry3 :: (R -> R -> R -> Term a) -> (Vec3 -> Term a)
+uncurry3 f a = a >- \a' -> f (getX a') (getY a') (getZ a')
+
+uncurry4 :: (R -> R -> R -> R -> Term a) -> (Vec4 -> Term a)
+uncurry4 f a = a >- \a' -> f (getX a') (getY a') (getZ a') (getW a')
+
+
+class ComponentWise a where
+    lift0 :: R -> a
+    lift1 :: (R -> R) -> (a -> a)
+    lift2 :: (R -> R -> R) -> (a -> a -> a)
+    lift3 :: (R -> R -> R -> R) -> (a -> a -> a -> a)
+
+instance ComponentWise Vec2 where
+    lift0 k = k >- \k' -> vec2 k' k'
+    lift1 f a = a >- \a' -> vec2 (f (getX a')) (f (getY a'))
+    lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec2 f a b) $ a >- \a' -> b >- \b' -> vec2 (f (getX a') (getX b')) (f (getY a') (getY b'))
+    lift3 f a b c = a >- \a' -> b >- \b' -> c >- \c' -> vec2 (f (getX a') (getX b') (getX c')) (f (getY a') (getY b') (getY c'))
+
+instance ComponentWise Vec3 where
+    lift0 k = k >- \k' -> vec3 k' k' k'
+    lift1 f a = a >- \a' -> vec3 (f (getX a')) (f (getY a')) (f (getZ a'))
+    lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec3 f a b) $ a >- \a' -> b >- \b' -> vec3 (f (getX a') (getX b')) (f (getY a') (getY b')) (f (getZ a') (getZ b'))
+    lift3 f a b c = a >- \a' -> b >- \b' -> c >- \c' -> vec3 (f (getX a') (getX b') (getX c')) (f (getY a') (getY b') (getY c')) (f (getZ a') (getZ b') (getZ c'))
+
+instance ComponentWise Vec4 where
+    lift0 k = k >- \k' -> vec4 k' k' k' k'
+    lift1 f a = a >- \a' -> vec4 (f (getX a')) (f (getY a')) (f (getZ a')) (f (getW a'))
+    lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec4 f a b) $ a >- \a' -> b >- \b' -> vec4 (f (getX a') (getX b')) (f (getY a') (getY b')) (f (getZ a') (getZ b')) (f (getW a') (getW b'))
+    lift3 f a b c = a >- \a' -> b >- \b' -> c >- \c' -> vec4 (f (getX a') (getX b') (getX c')) (f (getY a') (getY b') (getY c')) (f (getZ a') (getZ b') (getZ c')) (f (getW a') (getW b') (getW c'))
+
+
+vectorOperator2' :: (String -> Bool -> [Term'] -> Term') -> (R -> R -> R) -> Term a -> Term a -> Maybe (Term a)
+vectorOperator2' constructor f a b =
+    let builtIn = ["+", "-", "*", "/", "mix"] in
+    let Term f' = f (Term (BuiltIn "_1")) (Term (BuiltIn "_2")) in
+    case f' of 
+        Call function isOperator [BuiltIn "_1", BuiltIn "_2"] | elem function builtIn ->
+            Just $ Term $ constructor function isOperator [unTerm a, unTerm b]
+        _ -> Nothing
+
 
 rgba :: R -> R -> R -> R -> Color
 rgba = vec4
 
 hsva :: R -> R -> R -> R -> Color
-hsva (Term x) (Term y) (Term z) (Term w) = Term (Call "hsvaToRgba" [Call "vec4" [x, y, z, w]])
+hsva (Term x) (Term y) (Term z) (Term w) = Term (Call "hsvaToRgba" False [Call "vec4" False [x, y, z, w]])
 
 red, green, blue, alpha :: Color -> R
 red = getX
@@ -75,74 +134,79 @@ blue = getZ
 alpha = getW
 
 
+-- The mix function returns the linear blend of x and y, i.e. the product of x and (1 - a) plus the product of y and a.
+mix :: R -> R -> R -> R
+mix (Term x) (Term y) (Term a) = Term $ Call "mix" False [x, y, a]
+        
+        
 instance Num R where
-    (Term a) + (Term b) = Term (BinaryOperator "+" a b)
-    (Term a) - (Term b) = Term (BinaryOperator "-" a b)
-    (Term a) * (Term b) = Term (BinaryOperator "*" a b)
-    negate (Term a)     = Term (UnaryOperator "-" a)
-    abs (Term a)        = Term (Call "abs" [a])
-    signum (Term a)     = Term (Call "sign" [a])
+    (Term a) + (Term b) = Term (Call "+" True [a, b])
+    (Term a) - (Term b) = Term (Call "-" True [a, b])
+    (Term a) * (Term b) = Term (Call "*" True [a, b])
+    negate (Term a)     = Term (Call "-" True [a])
+    abs (Term a)        = Term (Call "abs" False [a])
+    signum (Term a)     = Term (Call "sign" False [a])
     fromInteger i       = Term (Constant (fromInteger i))
 
 instance Fractional R where
     fromRational r      = Term (Constant (fromRational r))
-    (Term a) / (Term b) = Term (BinaryOperator "/" a b)
+    (Term a) / (Term b) = Term (Call "/" True [a, b])
 
 instance Floating R where
     pi                  = Term (BuiltIn "pi")
-    Term a ** Term b    = Term (Call "pow" [a, b])
-    sqrt (Term a)       = Term (Call "sqrt" [a])
-    exp (Term a)        = Term (Call "exp" [a])
-    log (Term a)        = Term (Call "log" [a])
-    sin (Term a)        = Term (Call "sin" [a])
-    tan (Term a)        = Term (Call "tan" [a])
-    cos (Term a)        = Term (Call "cos" [a])
-    asin (Term a)       = Term (Call "asin" [a])
-    atan (Term a)       = Term (Call "atan" [a])
-    acos (Term a)       = Term (Call "acos" [a])
-    sinh (Term a)       = Term (Call "sinh" [a])
-    tanh (Term a)       = Term (Call "tanh" [a])
-    cosh (Term a)       = Term (Call "cosh" [a])
-    asinh (Term a)      = Term (Call "asinh" [a])
-    atanh (Term a)      = Term (Call "atanh" [a])
-    acosh (Term a)      = Term (Call "acosh" [a])
+    Term a ** Term b    = Term (Call "pow" False [a, b])
+    sqrt (Term a)       = Term (Call "sqrt" False [a])
+    exp (Term a)        = Term (Call "exp" False [a])
+    log (Term a)        = Term (Call "log" False [a])
+    sin (Term a)        = Term (Call "sin" False [a])
+    tan (Term a)        = Term (Call "tan" False [a])
+    cos (Term a)        = Term (Call "cos" False [a])
+    asin (Term a)       = Term (Call "asin" False [a])
+    atan (Term a)       = Term (Call "atan" False [a])
+    acos (Term a)       = Term (Call "acos" False [a])
+    sinh (Term a)       = Term (Call "sinh" False [a])
+    tanh (Term a)       = Term (Call "tanh" False [a])
+    cosh (Term a)       = Term (Call "cosh" False [a])
+    asinh (Term a)      = Term (Call "asinh" False [a])
+    atanh (Term a)      = Term (Call "atanh" False [a])
+    acosh (Term a)      = Term (Call "acosh" False [a])
 
 max', min', mod' :: R -> R -> R
-max' (Term a) (Term b) = Term (Call "max" [a, b])
-min' (Term a) (Term b) = Term (Call "min" [a, b])
-mod' (Term a) (Term b) = Term (Call "mod" [a, b])
+max' (Term a) (Term b) = Term (Call "max" False [a, b])
+min' (Term a) (Term b) = Term (Call "min" False [a, b])
+mod' (Term a) (Term b) = Term (Call "mod" False [a, b])
 
 round', floor', ceil' :: R -> R
-round' (Term a) = Term (Call "round" [a])
-floor' (Term a) = Term (Call "floor" [a])
-ceil' (Term a) = Term (Call "ceil" [a])
+round' (Term a) = Term (Call "round" False [a])
+floor' (Term a) = Term (Call "floor" False [a])
+ceil' (Term a) = Term (Call "ceil" False [a])
 
 if' :: Boolean -> Term a -> Term a -> Term a
 if' (Term a) (Term b) (Term c) = Term (If a b c)
 
 (.==.) :: R -> R -> Boolean
-Term a .==. Term b = Term (BinaryOperator "==" a b)
+Term a .==. Term b = Term (Call "==" True [a, b])
 
 (./=.) :: R -> R -> Boolean
-Term a ./=. Term b = Term (BinaryOperator "!=" a b)
+Term a ./=. Term b = Term (Call "!=" True [a, b])
 
 (.<.) :: R -> R -> Boolean
-Term a .<. Term b = Term (BinaryOperator "<" a b)
+Term a .<. Term b = Term (Call "<" True [a, b])
 
 (.>.) :: R -> R -> Boolean
-Term a .>. Term b = Term (BinaryOperator ">" a b)
+Term a .>. Term b = Term (Call ">" True [a, b])
 
 (.<=.) :: R -> R -> Boolean
-Term a .<=. Term b = Term (BinaryOperator "<=" a b)
+Term a .<=. Term b = Term (Call "<=" True [a, b])
 
 (.>=.) :: R -> R -> Boolean
-Term a .>=. Term b = Term (BinaryOperator ">=" a b)
+Term a .>=. Term b = Term (Call ">=" True [a, b])
 
 (.&&.) :: Boolean -> Boolean -> Boolean
-Term a .&&. Term b = Term (BinaryOperator "&&" a b)
+Term a .&&. Term b = Term (Call "&&" True [a, b])
 
 (.||.) :: Boolean -> Boolean -> Boolean
-Term a .||. Term b = Term (BinaryOperator "||" a b)
+Term a .||. Term b = Term (Call "||" True [a, b])
 
 class Bindable a            where variableType :: a -> String
 instance Bindable R         where variableType _ = "float"
@@ -194,17 +258,16 @@ compile' (If a b c) = do
     b' <- compile' b
     c' <- compile' c
     return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
-compile' (Call f es) = do
+compile' (Call f o es) = do
     es' <- mapM compile' es
-    return $ f ++ "(" ++ List.intercalate ", " es' ++ ")"
+    return $ case (o, es') of
+        (True, [e1']) -> "(" ++ f ++ e1' ++ ")"
+        (True, [e1', e2']) -> "(" ++ e1' ++ " " ++ f ++ " " ++ e2' ++ ")"
+        (_, _) -> f ++ "(" ++ List.intercalate ", " es' ++ ")"
 compile' (BuiltIn x) = return x
-compile' (UnaryOperator o a) = do
-    a' <- compile' a
-    return $ "(" ++ o ++ a' ++ ")"
-compile' (BinaryOperator o a b) = do
-    a' <- compile' a
-    b' <- compile' b
-    return $ "(" ++ a' ++ " " ++ o ++ " " ++ b' ++ ")"
+compile' (LiftVec2 f o es) = compile' (Call f o es)
+compile' (LiftVec3 f o es) = compile' (Call f o es)
+compile' (LiftVec4 f o es) = compile' (Call f o es)
 compile' (Bind t x f) = do
     x' <- compile' x
     vs <- get
@@ -244,17 +307,16 @@ instance Show Term' where
                 b' <- showM b
                 c' <- showM c
                 return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
-            showM (Call f es) = do
-                es' <- mapM showM es
-                return $ f ++ "(" ++ List.intercalate ", " es' ++ ")"
             showM (BuiltIn x) = return x
-            showM (UnaryOperator o a) = do
-                a' <- showM a
-                return $ "(" ++ o ++ a' ++ ")"
-            showM (BinaryOperator o a b) = do
-                a' <- showM a
-                b' <- showM b
-                return $ "(" ++ a' ++ " " ++ o ++ " " ++ b' ++ ")"
+            showM (Call f o es) = do
+                es' <- mapM showM es
+                return $ case (o, es') of
+                    (True, [e1']) -> "(" ++ f ++ e1' ++ ")"
+                    (True, [e1', e2']) -> "(" ++ e1' ++ " " ++ f ++ " " ++ e2' ++ ")"
+                    (_, _) -> f ++ "(" ++ List.intercalate ", " es' ++ ")"
+            showM (LiftVec2 f o es) = showM $ Call f o es
+            showM (LiftVec3 f o es) = showM $ Call f o es
+            showM (LiftVec4 f o es) = showM $ Call f o es
             showM (Bind t x f) = do
                 x' <- showM x
                 vs <- get
