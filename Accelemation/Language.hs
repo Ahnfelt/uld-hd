@@ -37,21 +37,29 @@ type Image = R -> R -> Color
 type Animation = Time -> Image
 
 
-class HasX a where getX :: a -> R
-class HasY a where getY :: a -> R
-class HasZ a where getZ :: a -> R
-class HasW a where getW :: a -> R
+class HasX a where getX :: a -> R; withX :: R -> a -> a
+class HasY a where getY :: a -> R; withY :: R -> a -> a
+class HasZ a where getZ :: a -> R; withZ :: R -> a -> a
+class HasW a where getW :: a -> R; withW :: R -> a -> a
 
-instance HasX Vec2 where getX = Term . Field "x" . unTerm
-instance HasX Vec3 where getX = Term . Field "x" . unTerm
-instance HasX Vec4 where getX = Term . Field "x" . unTerm
-instance HasY Vec2 where getY = Term . Field "y" . unTerm
-instance HasY Vec3 where getY = Term . Field "y" . unTerm
-instance HasY Vec4 where getY = Term . Field "y" . unTerm
-instance HasZ Vec3 where getZ = Term . Field "z" . unTerm
-instance HasZ Vec4 where getZ = Term . Field "z" . unTerm
-instance HasW Vec4 where getW = Term . Field "w" . unTerm
+instance HasX Vec2 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec2 r (getY a')
+instance HasX Vec3 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec3 r (getY a') (getZ a')
+instance HasX Vec4 where getX = Term . Field "x" . unTerm; withX r a = a >- \a' -> vec4 r (getY a') (getZ a') (getW a')
+instance HasY Vec2 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec2 (getX a') r
+instance HasY Vec3 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec3 (getX a') r (getZ a')
+instance HasY Vec4 where getY = Term . Field "y" . unTerm; withY r a = a >- \a' -> vec4 (getX a') r (getZ a') (getW a')
+instance HasZ Vec3 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' -> vec3 (getX a') (getY a') r
+instance HasZ Vec4 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' -> vec4 (getX a') (getY a') r (getW a')
+instance HasW Vec4 where getW = Term . Field "w" . unTerm; withW r a = a >- \a' -> vec4 (getX a') (getY a') (getZ a') r 
 
+curry2 :: Vec2 -> (R -> R -> Term a) -> Term a
+curry2 a f = a >- \a' -> f (getX a') (getY a')
+
+curry3 :: Vec3 -> (R -> R -> R -> Term a) -> Term a
+curry3 a f = a >- \a' -> f (getX a') (getY a') (getZ a')
+
+curry4 :: Vec4 -> (R -> R -> R -> R -> Term a) -> Term a
+curry4 a f = a >- \a' -> f (getX a') (getY a') (getZ a') (getW a')
 
 vec2 :: R -> R -> Vec2
 vec2 (Term x) (Term y) = Term (Call "vec2" [x, y])
