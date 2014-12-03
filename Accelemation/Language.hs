@@ -13,6 +13,8 @@ data Term'
     | Bind String Term' (Term' -> Term')
     | Variable Int
 
+    | IterateWhile String Term' (Term' -> Term') (Term' -> Term')
+
     | Field String Term'
     
     | If Term' Term' Term'
@@ -247,6 +249,12 @@ infixr 0 >-
 (>-) :: Bindable (Term a) => Term a -> (Term a -> Term b) -> Term b
 a@(Term x) >- f = Term (Bind (variableType a) x (unTerm . f . Term))
 
+iterateWhile :: Bindable (Term a) => Term a -> (Term a -> Term a) -> (Term a -> Boolean) -> Term a
+iterateWhile i@(Term initialValue) computeNext loopPredicate =
+    Term $ IterateWhile t initialValue (unTerm . computeNext . Term) (unTerm . loopPredicate . Term)
+        where
+            t = variableType i
+
 compile :: Animation -> String
 compile f = before ++ bindings ++ "    gl_FragColor = " ++ compiled ++ after
     where
@@ -305,6 +313,16 @@ compile' (Bind t x f) = do
     f' <- compile' (f (Variable i))
     return f'
 compile' (Variable i) = return $ "v" ++ show i
+compile' (IterateWhile t x f p) = do
+    x' <- compile' x
+    vs <- get
+    let i = length vs
+    let v = "    " ++ t ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
+    f' <- compile' (f (Variable i))
+    p' <- compile' (p (Variable i))
+    let while = "    while(" ++ p' ++ ") v" ++ show i ++ " = " ++ f' ++ ";\n"
+    put (while:v:vs)
+    return $ "w" ++ show i
 
 generateHtml :: Animation -> IO ()
 generateHtml animation = do
