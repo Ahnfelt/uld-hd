@@ -86,25 +86,25 @@ uncurry4 :: (R -> R -> R -> R -> Term a) -> (Vec4 -> Term a)
 uncurry4 f a = a >- \a' -> f (getX a') (getY a') (getZ a') (getW a')
 
 
-class LiftTerm a where
+class ComponentWise a where
     lift0 :: R -> a
     lift1 :: (R -> R) -> (a -> a)
     lift2 :: (R -> R -> R) -> (a -> a -> a)
     lift3 :: (R -> R -> R -> R) -> (a -> a -> a -> a)
 
-instance LiftTerm Vec2 where
+instance ComponentWise Vec2 where
     lift0 k = k >- \k' -> vec2 k' k'
     lift1 f a = a >- \a' -> vec2 (f (getX a')) (f (getY a'))
     lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec2 f a b) $ a >- \a' -> b >- \b' -> vec2 (f (getX a') (getX b')) (f (getY a') (getY b'))
     lift3 f a b c = a >- \a' -> b >- \b' -> c >- \c' -> vec2 (f (getX a') (getX b') (getX c')) (f (getY a') (getY b') (getY c'))
 
-instance LiftTerm Vec3 where
+instance ComponentWise Vec3 where
     lift0 k = k >- \k' -> vec3 k' k' k'
     lift1 f a = a >- \a' -> vec3 (f (getX a')) (f (getY a')) (f (getZ a'))
     lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec3 f a b) $ a >- \a' -> b >- \b' -> vec3 (f (getX a') (getX b')) (f (getY a') (getY b')) (f (getZ a') (getZ b'))
     lift3 f a b c = a >- \a' -> b >- \b' -> c >- \c' -> vec3 (f (getX a') (getX b') (getX c')) (f (getY a') (getY b') (getY c')) (f (getZ a') (getZ b') (getZ c'))
 
-instance LiftTerm Vec4 where
+instance ComponentWise Vec4 where
     lift0 k = k >- \k' -> vec4 k' k' k' k'
     lift1 f a = a >- \a' -> vec4 (f (getX a')) (f (getY a')) (f (getZ a')) (f (getW a'))
     lift2 f a b = flip fromMaybe (vectorOperator2' LiftVec4 f a b) $ a >- \a' -> b >- \b' -> vec4 (f (getX a') (getX b')) (f (getY a') (getY b')) (f (getZ a') (getZ b')) (f (getW a') (getW b'))
