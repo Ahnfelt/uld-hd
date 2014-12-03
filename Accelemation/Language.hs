@@ -42,15 +42,15 @@ class HasY a where getY :: a -> R
 class HasZ a where getZ :: a -> R
 class HasW a where getW :: a -> R
 
-instance HasX (Term (Double, Double))                   where getX = Term . Field "x" . unTerm
-instance HasX (Term (Double, Double, Double))           where getX = Term . Field "x" . unTerm
-instance HasX (Term (Double, Double, Double, Double))   where getX = Term . Field "x" . unTerm
-instance HasY (Term (Double, Double))                   where getY = Term . Field "y" . unTerm
-instance HasY (Term (Double, Double, Double))           where getY = Term . Field "y" . unTerm
-instance HasY (Term (Double, Double, Double, Double))   where getY = Term . Field "y" . unTerm
-instance HasZ (Term (Double, Double, Double))           where getZ = Term . Field "z" . unTerm
-instance HasZ (Term (Double, Double, Double, Double))   where getZ = Term . Field "z" . unTerm
-instance HasW (Term (Double, Double, Double, Double))   where getW = Term . Field "w" . unTerm
+instance HasX Vec2 where getX = Term . Field "x" . unTerm
+instance HasX Vec3 where getX = Term . Field "x" . unTerm
+instance HasX Vec4 where getX = Term . Field "x" . unTerm
+instance HasY Vec2 where getY = Term . Field "y" . unTerm
+instance HasY Vec3 where getY = Term . Field "y" . unTerm
+instance HasY Vec4 where getY = Term . Field "y" . unTerm
+instance HasZ Vec3 where getZ = Term . Field "z" . unTerm
+instance HasZ Vec4 where getZ = Term . Field "z" . unTerm
+instance HasW Vec4 where getW = Term . Field "w" . unTerm
 
 
 vec2 :: R -> R -> Vec2
