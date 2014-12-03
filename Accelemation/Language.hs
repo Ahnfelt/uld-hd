@@ -52,14 +52,23 @@ instance HasZ Vec3 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' 
 instance HasZ Vec4 where getZ = Term . Field "z" . unTerm; withZ r a = a >- \a' -> vec4 (getX a') (getY a') r (getW a')
 instance HasW Vec4 where getW = Term . Field "w" . unTerm; withW r a = a >- \a' -> vec4 (getX a') (getY a') (getZ a') r 
 
-curry2 :: Vec2 -> (R -> R -> Term a) -> Term a
-curry2 a f = a >- \a' -> f (getX a') (getY a')
+curry2 :: (Vec2 -> Term a) -> (R -> R -> Term a)
+curry2 f x y = vec2 x y >- \a' -> f a'
 
-curry3 :: Vec3 -> (R -> R -> R -> Term a) -> Term a
-curry3 a f = a >- \a' -> f (getX a') (getY a') (getZ a')
+curry3 :: (Vec3 -> Term a) -> (R -> R -> R -> Term a)
+curry3 f x y z = vec3 x y z >- \a' -> f a'
 
-curry4 :: Vec4 -> (R -> R -> R -> R -> Term a) -> Term a
-curry4 a f = a >- \a' -> f (getX a') (getY a') (getZ a') (getW a')
+curry4 :: (Vec4 -> Term a) -> (R -> R -> R -> R -> Term a)
+curry4 f x y z w = vec4 x y z w >- \a' -> f a'
+
+uncurry2 :: (R -> R -> Term a) -> (Vec2 -> Term a)
+uncurry2 f a = a >- \a' -> f (getX a') (getY a')
+
+uncurry3 :: (R -> R -> R -> Term a) -> (Vec3 -> Term a)
+uncurry3 f a = a >- \a' -> f (getX a') (getY a') (getZ a')
+
+uncurry4 :: (R -> R -> R -> R -> Term a) -> (Vec4 -> Term a)
+uncurry4 f a = a >- \a' -> f (getX a') (getY a') (getZ a') (getW a')
 
 vec2 :: R -> R -> Vec2
 vec2 (Term x) (Term y) = Term (Call "vec2" [x, y])
