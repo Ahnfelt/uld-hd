@@ -27,5 +27,6 @@ rainbow _ x _ = hsva (mod' x 1) 0.5 0.5 1
 
 grayBall :: Grayscale
 grayBall _ x y =
-    distance 0 x 0 y >- \d ->
+    curry2 magnitude x y >- \d ->
     gaussianNormalized 0.4 d
+
