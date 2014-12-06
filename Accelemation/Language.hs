@@ -10,10 +10,10 @@ import System.Environment (getProgName)
 data Term'
     = Constant Double
     
-    | Bind String Term' (Term' -> Term')
+    | Bind (Precision -> String) Term' (Term' -> Term')
     | Variable Int
 
-    | IterateWhile String Term' (Term' -> Term') (Term' -> Term')
+    | IterateWhile (Precision -> String) Term' Term' (Term' -> Term' -> Term') (Term' -> Term' -> Term') (Term' -> Term' -> Term')
 
     | Field String Term'
     
@@ -26,6 +26,12 @@ data Term'
     | LiftVec2 String Bool [Term']
     | LiftVec3 String Bool [Term']
     | LiftVec4 String Bool [Term']
+
+data Precision = Single | Double
+
+instance Show Precision where
+    show Single = "float"
+    show Double = "double"
 
 newtype Term a = Term { unTerm :: Term' }
 
@@ -238,28 +244,31 @@ Term a .&&. Term b = Term (Call "&&" True [a, b])
 (.||.) :: Boolean -> Boolean -> Boolean
 Term a .||. Term b = Term (Call "||" True [a, b])
 
-class Bindable a            where variableType :: a -> String
-instance Bindable R         where variableType _ = "float"
-instance Bindable Boolean   where variableType _ = "bool"
-instance Bindable Vec2      where variableType _ = "vec2"
-instance Bindable Vec3      where variableType _ = "vec3"
-instance Bindable Vec4      where variableType _ = "vec4"
+class Bindable a            where variableType :: a -> Precision -> String
+instance Bindable R         where variableType _ = show
+instance Bindable Boolean   where variableType _ = const "bool"
+instance Bindable Vec2      where variableType _ = const "vec2"
+instance Bindable Vec3      where variableType _ = const "vec3"
+instance Bindable Vec4      where variableType _ = const "vec4"
 
 infixr 0 >-
 (>-) :: Bindable (Term a) => Term a -> (Term a -> Term b) -> Term b
 a@(Term x) >- f = Term (Bind (variableType a) x (unTerm . f . Term))
 
-iterateWhile :: Bindable (Term a) => Term a -> (Term a -> Term a) -> (Term a -> Boolean) -> Term a
-iterateWhile i@(Term initialValue) computeNext loopPredicate =
-    Term $ IterateWhile t initialValue (unTerm . computeNext . Term) (unTerm . loopPredicate . Term)
+iterateWhile :: Bindable (Term a) => R -> Term a -> (Term a -> R -> Term a) -> (Term a -> R -> Boolean) -> (Term a -> R -> Term b) -> Term b
+iterateWhile (Term maxIterations) i@(Term init) next stopPredicate choose =
+    Term $ IterateWhile t maxIterations init (untermify next) (untermify stopPredicate) (untermify choose)
         where
             t = variableType i
+            untermify :: (Term a -> Term b -> Term c) -> (Term' -> Term' -> Term')
+            untermify f a i = unTerm $ f (Term a) (Term i)
 
-compile :: Animation -> String
-compile f = before ++ bindings ++ "    gl_FragColor = " ++ compiled ++ after
+
+compile :: Precision -> Animation -> String
+compile precision f = before ++ bindings ++ "    gl_FragColor = " ++ compiled ++ after
     where
         bindings        = concat (reverse vs)
-        (compiled, vs)  = runState (compile' animation) []
+        (compiled, vs)  = runState (compile' precision animation) []
         Term animation  = f t x y
         t               = Term (BuiltIn "t")
         x               = Term (BuiltIn "x")
@@ -275,58 +284,79 @@ compile f = before ++ bindings ++ "    gl_FragColor = " ++ compiled ++ after
             "    return vec4(r.x, r.y, r.z, c.w);\n" ++
             "}\n" ++
             "void main() {\n" ++
-            "    float pi = " ++ show pi ++ ";\n" ++
-            "    float t = u_time;\n" ++
-            "    float mystery = 1.23;\n" ++
-            "    float x = (gl_FragCoord.x / u_resolution.x) * 2.0 * u_aspectRatio - u_aspectRatio * mystery;\n" ++
-            "    float y = (gl_FragCoord.y / u_resolution.y) * 2.0 - 1.0 * mystery;\n"
+            "    " ++ show precision ++ " pi = " ++ show pi ++ ";\n" ++
+            "    " ++ show precision ++ " t = u_time;\n" ++
+            "    " ++ show precision ++ " mystery = 1.23;\n" ++
+            "    " ++ show precision ++ " x = (gl_FragCoord.x / u_resolution.x) * 2.0 * u_aspectRatio - u_aspectRatio * mystery;\n" ++
+            "    " ++ show precision ++ " y = (gl_FragCoord.y / u_resolution.y) * 2.0 - 1.0 * mystery;\n"
         after           =
             ";\n}\n"
 
-            
-compile' :: Term' -> State [String] String
-compile' (Constant r) = return $ show r
-compile' (Field l r) = do
-    r' <- compile' r
-    return (r' ++ "." ++ l)
-compile' (If a b c) = do
-    a' <- compile' a
-    b' <- compile' b
-    c' <- compile' c
-    return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
-compile' (Call f o es) = do
-    es' <- mapM compile' es
-    return $ case (o, es') of
-        (True, [e1']) -> "(" ++ f ++ e1' ++ ")"
-        (True, [e1', e2']) -> "(" ++ e1' ++ " " ++ f ++ " " ++ e2' ++ ")"
-        (_, _) -> f ++ "(" ++ List.intercalate ", " es' ++ ")"
-compile' (BuiltIn x) = return x
-compile' (LiftVec2 f o es) = compile' (Call f o es)
-compile' (LiftVec3 f o es) = compile' (Call f o es)
-compile' (LiftVec4 f o es) = compile' (Call f o es)
-compile' (Bind t x f) = do
-    x' <- compile' x
-    vs <- get
-    let i = length vs
-    let v = "    " ++ t ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
-    put (v:vs)
-    f' <- compile' (f (Variable i))
-    return f'
-compile' (Variable i) = return $ "v" ++ show i
-compile' (IterateWhile t x f p) = do
-    x' <- compile' x
-    vs <- get
-    let i = length vs
-    let v = "    " ++ t ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
-    f' <- compile' (f (Variable i))
-    p' <- compile' (p (Variable i))
-    let while = "    while(" ++ p' ++ ") v" ++ show i ++ " = " ++ f' ++ ";\n"
-    put (while:v:vs)
-    return $ "w" ++ show i
+
+compile' :: Precision -> Term' -> State [String] String
+compile' precision term' = let compileP = compile' precision in case term' of
+    Constant r -> return $ show r
+    Field l r -> do
+        r' <- compileP r
+        return (r' ++ "." ++ l)
+    If a b c -> do
+        a' <- compileP a
+        b' <- compileP b
+        c' <- compileP c
+        return $ "(" ++ a' ++ " ? " ++ b' ++ " : " ++ c' ++ ")"
+    Call f o es -> do
+        es' <- mapM compileP es
+        return $ case (o, es') of
+            (True, [e1']) -> "(" ++ f ++ e1' ++ ")"
+            (True, [e1', e2']) -> "(" ++ e1' ++ " " ++ f ++ " " ++ e2' ++ ")"
+            (_, _) -> f ++ "(" ++ List.intercalate ", " es' ++ ")"
+    BuiltIn x -> return x
+    LiftVec2 f o es -> compileP (Call f o es)
+    LiftVec3 f o es -> compileP (Call f o es)
+    LiftVec4 f o es -> compileP (Call f o es)
+    Bind t x f -> do
+        x' <- compileP x
+        vs <- get
+        let i = length vs
+        let v = "    " ++ t precision ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
+        put (v:vs)
+        f' <- compileP (f (Variable i))
+        return f'
+    Variable i -> return $ "v" ++ show i
+    IterateWhile t maxIterations init next p r -> do
+        maxIterations' <- compileP maxIterations
+        init' <- compileP init
+        vs <- get
+        let aNumber = length vs
+        let iOuterNumber = length vs + 1
+        let iInnerNumber = length vs + 2
+        let a = "v" ++ show aNumber
+        let iOuter = "v" ++ show iOuterNumber
+        let iInner = "v" ++ show iInnerNumber
+        let aLet = "    " ++ t precision ++ " " ++ a ++ " = " ++ init' ++ ";\n"
+        let iOuterLet = "    " ++ show precision ++ " " ++ iOuter ++ " = " ++ maxIterations' ++ ";\n"
+        next' <- compileP (next (Variable aNumber) (Variable iInnerNumber))
+        p' <- compileP (p (Variable aNumber) (Variable iInnerNumber))
+        let while = "    for(" ++ show precision ++ " " ++ iInner ++ " = 0.0; " ++ iInner ++ " < " ++ maxIterations' ++ "; " ++ iInner ++ "++) {\n"
+                ++ "        if(" ++ p' ++ ") {\n"
+                ++ "            " ++ iOuter ++ " = " ++ iInner ++ ";\n"
+                ++ "            break;\n"
+                ++ "        }\n"
+                ++ "        " ++ a ++ " = " ++ next' ++ ";\n"
+                ++ "    }\n"
+        put (while:iOuterLet:aLet:vs)
+        r' <- compileP (r (Variable aNumber) (Variable iOuterNumber))
+        return r'
 
 generateHtml :: Animation -> IO ()
-generateHtml animation = do
-    let f' = compile animation
+generateHtml = generateHtml' Single
+
+generateHtmlDouble :: Animation -> IO ()
+generateHtmlDouble = generateHtml' Double
+
+generateHtml' :: Precision -> Animation -> IO ()
+generateHtml' precision animation = do
+    let f' = compile precision animation
     putStrLn f'
     name <- getProgName
     writeFile (name ++ ".html") (before ++ f' ++ after)
@@ -367,7 +397,7 @@ instance Show Term' where
                 x' <- showM x
                 vs <- get
                 let i = length vs
-                let v = "    " ++ t ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
+                let v = "    " ++ t Single ++ " v" ++ show i ++ " = " ++ x' ++ ";\n"
                 put (v:vs)
                 f' <- showM (f (Variable i))
                 return f'

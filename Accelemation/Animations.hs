@@ -1,5 +1,5 @@
 module Accelemation.Animations (
-    chess, gaussBall
+    chess, gaussBall, mandelbrot
 ) where
 
 import Accelemation.Language
@@ -21,3 +21,11 @@ gaussBall variance _ x y =
     curry2 magnitude x y >- \d ->
     gaussianNormalized variance d >- \intensity ->
     rgba intensity intensity intensity 1
+
+mandelbrot :: Animation
+mandelbrot t x y = while >- \i -> rgba i i i 1 where
+    while = iterateWhile 1000
+        (vec2 0 0)
+        (\v0 i -> vec2 (getX v0 * getX v0 - getY v0 * getY v0 + x) (2.0 * getX v0 * getY v0 + y))
+        (\v i -> magnitude v .>. 2)
+        (\v i -> 1 - (i / 1000))
