@@ -24,8 +24,8 @@ gaussBall variance _ x y =
 
 mandelbrot :: Animation
 mandelbrot t x y = while >- \i -> rgba i i i 1 where
-    while = iterateWhile 1000
+    while = iterateWhile 100
         (vec2 0 0)
         (\v0 i -> vec2 (getX v0 * getX v0 - getY v0 * getY v0 + x) (2.0 * getX v0 * getY v0 + y))
         (\v i -> magnitude v .>. 2)
-        (\v i -> 1 - (i / 1000))
+        (\v i -> 1 - (i / 100))
