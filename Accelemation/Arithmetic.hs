@@ -15,3 +15,6 @@ sigmoid x = 1 / (1 + exp (-x))
 
 sigfade :: R -> R
 sigfade x = sigmoid ((x - 0.5)*10)
+
+sinNormalized :: R -> R
+sinNormalized x = sin (x - pi/2) * 0.5 + 0.5

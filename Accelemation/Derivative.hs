@@ -56,7 +56,8 @@ derivative' t@(Term term') = case term' of
     BuiltIn "_x"            -> 1
     If a b c                -> if' (Term a) (derivative' (Term b)) (derivative' (Term c))
 --  Field String Term'      ->
---  Bind t v f              -> derivative' (Term v) >- \v' -- TODO
+    Bind t v f              -> derivative' (Term (f v))
+        -- derivative' (Term v) >- \v' -- TODO
     Call f True [a, b]      -> derivativeBinary f a b
     Call "-" True [a]       -> -(derivative' (Term a))
     Call "abs" False [a]    -> derivative' (Term a) >- \a' -> if' ((Term a) .>. 0) a' (-a') -- TODO remove common subexpression

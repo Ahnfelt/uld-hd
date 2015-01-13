@@ -11,7 +11,7 @@ import Prelude hiding (subtract)
 
 main :: IO ()
 main = generateHtml $ 
-    let displacement = derivativeGrayscale waves `multiply` (\t x y -> rgba 0.01 0.01 0.01 1)
+    let displacement = derivativeGrayscale waves
     in bendSpaceTime displacement (scale 0.1 0.1 chess)
 
 
@@ -23,10 +23,16 @@ test3 = bendSpaceTime (fastForward 0.1 (orbit 1 1.3 (spin 1 (derivativeGrayscale
 
 waves :: Grayscale
 waves t x y =
-    let wave frequence amplitude =
-            let d = curry2 magnitude x y
-            in sin (frequence * (t + 3 / d)) * amplitude
-    in wave 10 1
+    let wave cx cy frequence amplitude =
+            let d = sqrt ((x - cx)**2 + (y - cy)**2)
+            in sin (frequence * t + d) * amplitude
+    in wave 0 0 7 0.01 + wave (-1) (-1) 5 0.01 + wave (-1) (-1) 5 0.1 + wave (1) (-1) 5 0.01 + wave (-0.3) (0.7) 17 0.007
+
+waves2 :: Grayscale
+waves2 t x y =
+    let wave frequence amplitude = sin (frequence * t + x) * amplitude
+    in wave 11 0.01 + wave 3 0.1 + wave 7 0.2 + wave 22 0.05
+
 
 grayBall :: Grayscale
 grayBall _ x y =
