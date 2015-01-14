@@ -12,13 +12,13 @@ main :: IO ()
 main = generateHtml $ fromPolarCoordinates flowers
 
 flowers :: Animation
-flowers = flower `addition` timeTravel 1337 flower
+flowers = (flower `addition` timeTravel 1337 flower) `addition` timeTravel 133 flower
 
 flower :: Animation
 flower t r phi =
     let
         n = (floor' (t / (2*pi) + 1 `mod'` 10))
-        d = sinNormalized (t + phi*n) * (sinNormalized t) + sinNormalized t * 0.5
+        d = sinNormalized (t + phi*n) * (sinNormalized t)
         h = t / 77-- phi/(2*pi)
         s = d
         v = gaussianNormalized 0.05 (r - d)
