@@ -19,8 +19,8 @@ flower t r phi =
     let
         n = (floor' (t / (2*pi) + 1 `mod'` 10))
         d = sinNormalized (t + phi*n) * (sinNormalized t)
-        h = t / 77-- phi/(2*pi)
+        h = t / 77
         s = d
         v = gaussianNormalized 0.05 (r - d)
-    in hsva h s v 1 -- rgba i 0.1 0.2 i
+    in hsva h s v 1
 
