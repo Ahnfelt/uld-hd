@@ -24,11 +24,3 @@ flower t r phi =
         v = gaussianNormalized 0.05 (r - d)
     in hsva h s v 1 -- rgba i 0.1 0.2 i
 
-fromPolarCoordinates :: Animation -> Animation
-fromPolarCoordinates f t x y =
-    let r = sqrt (x**2 + y**2) in
-    let phi = atan2' x y in
-    f t r phi
-
-atan2' :: R -> R -> R
-atan2' x y = 2 * atan(y / (sqrt (x**2 + y**2) + x))

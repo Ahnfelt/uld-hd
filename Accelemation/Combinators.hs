@@ -1,7 +1,7 @@
 module Accelemation.Combinators (
-    translate, scale, rotate,
+    translate, scale, scaleUniform, rotate,
     scroll, circle, orbit, spin,
-    timeTravel, fastForward, bendSpaceTime,
+    timeTravel, fastForward, bendSpaceTime, fromPolarCoordinates,
     multiply, screen, addition, subtract, top
 ) where
 
@@ -19,6 +19,9 @@ translate dx dy animation t x y =
 scale :: R -> R -> Animation -> Animation
 scale scaleX scaleY animation t x y =
     (animation t) (x / scaleX) (y / scaleY)
+
+scaleUniform :: R -> Animation -> Animation
+scaleUniform factor = scale factor factor
 
 rotate :: R -> Animation -> Animation
 rotate angle animation t x y =
@@ -53,6 +56,15 @@ bendSpaceTime f target t x y =
     alpha spaceTimeColor >- \a ->
     target (t + dt * a) (x + dx * a) (y + dy * a)
 
+
+fromPolarCoordinates :: Animation -> Animation
+fromPolarCoordinates f t x y =
+    sqrt (x**2 + y**2) >- \r ->
+    atan2' x y >- \phi ->
+    f t r phi
+
+atan2' :: R -> R -> R
+atan2' x y = 2 * atan(y / (sqrt (x**2 + y**2) + x))
 
 --------------------------------
 -- Animation blendings
