@@ -18,3 +18,12 @@ sigfade x = sigmoid ((x - 0.5)*10)
 
 sinNormalized :: R -> R
 sinNormalized x = sin (x - pi/2) * 0.5 + 0.5
+
+fromPolar :: (R -> R -> R) -> (R -> R -> R)
+fromPolar f x y =
+    sqrt (x**2 + y**2) >- \r ->
+    atan2' x y >- \phi ->
+    f r phi
+    where
+        atan2' :: R -> R -> R
+        atan2' x y = 2 * atan(y / (sqrt (x**2 + y**2) + x))

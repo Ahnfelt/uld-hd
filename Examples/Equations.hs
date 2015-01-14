@@ -13,7 +13,7 @@ main = generateHtml $ translate 0.4 0.21 $ scaleUniform 0.2 $ additions [
         fromFunction 0.0 f,
         fromEquation 0.1 f2,
         fromEquation 0.2 unitCircle,
-        fromPolarCoordinates (fromEquation 0.3 godenSpiral),
+        fromEquation 0.3 (fromPolar godenSpiral),
         fromFunction 0.4 sin,
         fromFunction 0.5 cos,
         fromFunction 0.6 sinNormalized,
@@ -57,4 +57,4 @@ fromEquation h f t x y =
 
 godenSpiral r phi = r - a * exp (b * phi) where
     a = 1
-    b = 1.618
+    b = 0.30649 --1.618
