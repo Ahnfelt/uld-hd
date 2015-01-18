@@ -21,7 +21,7 @@ plots = scaleUniform 0.2 $ additions [
         fromEquation 0.3 (fromPolar godenSpiral),
         fromFunction 0.4 sin,
         fromFunction 0.5 cos,
-        fromFunction 0.6 sinNormalized,
+        fromFunction 0.6 (\x -> sinNormalized (x*2*pi)),
         fromFunction 0.7 (gaussian 1),
         fromFunction 0.8 (gaussianNormalized 1),
         fromFunction 0.9 sigmoid,
