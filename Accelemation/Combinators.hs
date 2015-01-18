@@ -63,9 +63,6 @@ fromPolarCoordinates f t x y =
     atan2' x y >- \phi ->
     f t r phi
 
-atan2' :: R -> R -> R
-atan2' x y = 2 * atan(y / (sqrt (x**2 + y**2) + x))
-
 --------------------------------
 -- Animation blendings
 --------------------------------
