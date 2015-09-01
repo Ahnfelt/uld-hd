@@ -6,13 +6,15 @@ import Accelemation.Arithmetic
 import Accelemation.Derivative
 import Accelemation.Animations
 
-
+import Control.Applicative (liftA)
 import Prelude hiding (subtract)
 
 main :: IO ()
-main = generateHtml $ 
-    let displacement = derivativeGrayscale waves
-    in bendSpaceTime displacement (scale 0.1 0.1 chess)
+main = generateHtml $
+    let
+        displacement = derivativeGrayscale waves
+        colorChessWaves = rainscale waves `multiply` (scale 0.05 0.05 chess)
+    in bendSpaceTime displacement colorChessWaves
 
 
 
@@ -20,6 +22,13 @@ test1 = derivativeGrayscale grayBall `addition` (\t x y -> rgba 0.5 0.5 0.5 1)
 test2 = derivativeGrayscale grayBall `addition` fromGrayscale grayBall
 test3 = bendSpaceTime (fastForward 0.1 (orbit 1 1.3 (spin 1 (derivativeGrayscale grayBall)))) (scale 0.04 0.04 chess)
 
+
+rainscale :: Grayscale -> Animation
+rainscale = liftA toRainscaleImage
+    where
+        toRainscaleImage :: GrayscaleImage -> Image
+        toRainscaleImage f x y = (f x y) >- \i ->
+            hsva i 0.5 0.5 1
 
 waves :: Grayscale
 waves t x y =
